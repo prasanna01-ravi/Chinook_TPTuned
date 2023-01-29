@@ -1,6 +1,7 @@
 ﻿@page "/playlist/{PlaylistId:long}"
 @attribute [Authorize]
 
+@using Chinook.Core;
 @using Chinook.Models
 @using Chinook.Services.Interface;
 @using Microsoft.EntityFrameworkCore
@@ -42,13 +43,13 @@ else
                         <div class="d-flex">
                             @if (Playlist.Name != "Favorite")
                             {
-                                @if (track.IsFavorite)
+                                @if (track.IsFavorite || PlaylistId == Constant.PlaylistId)
                                 {
-                                    <a href="#" class="m-1" title="Unark as favorite" @onclick="@(() => UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
+                                    <a href="#" class="m-1" title="Unark as favorite" @onclick="@(async () => await UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
                                 }
                                 else
                                 {
-                                    <a href="#" class="m-1" title="Mark as favorite" @onclick="@(() => FavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star"></i></a>
+                                    <a href="#" class="m-1" title="Mark as favorite" @onclick="@(async () => await FavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star"></i></a>
                                 }
 
                             }
@@ -74,7 +75,7 @@ else
     {
         CurrentUserId = await GetUserId();
         await InvokeAsync(StateHasChanged);
-        Playlist = await Service.GetById(PlaylistId, CurrentUserId);
+        await GetPlaylistData();
     }
 
     private async Task<string> GetUserId()
@@ -84,22 +85,49 @@ else
         return userId;
     }
 
-    private void FavoriteTrack(long trackId)
+    protected override async Task OnParametersSetAsync()
     {
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
-        InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} added to playlist Favorites.";
+        await InvokeAsync(StateHasChanged);
+        CloseInfoMessage();
+        await GetPlaylistData();
     }
 
-    private void UnfavoriteTrack(long trackId)
-    {
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
-        InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from playlist Favorites.";
-    }
-
-    private void RemoveTrack(long trackId)
+    private async Task FavoriteTrack(long trackId)
     {
         CloseInfoMessage();
+        if (await Service.AddTrackToPlaylistId(trackId, Constant.PlaylistId, null))
+        {
+            var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+            InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} added to playlist Favorites.";
+            await GetPlaylistData();
+        }        
+    }
 
+    private async Task UnfavoriteTrack(long trackId)
+    {
+        CloseInfoMessage();
+        if (await Service.RemoveTrackFromPlaylist(trackId, Constant.PlaylistId))
+        {
+            var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+            InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from playlist Favorites.";
+            await GetPlaylistData();
+        }        
+    }
+
+    private async Task GetPlaylistData()
+    {
+        Playlist = await Service.GetById(PlaylistId, CurrentUserId);
+    }
+
+    private async Task RemoveTrack(long trackId)
+    {
+        CloseInfoMessage();
+        if (await Service.RemoveTrackFromPlaylist(trackId, PlaylistId))
+        {
+            var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+            InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from {Playlist.Name}.";
+            await GetPlaylistData();
+        }
     }
 
     private void CloseInfoMessage()

@@ -26,11 +26,12 @@ builder.Services.AddScoped<IPlaylistRepository, PlaylistRepository>((provider) =
     new PlaylistRepository(provider.GetService<ChinookContext>().Set<Playlist>()));
 builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 
-//builder.Services.AddScoped<IBaseRepository<UserPlaylist>, BaseRepository<UserPlaylist>>((provider) =>
-//            new BaseRepository<UserPlaylist>(provider.GetService<ChinookContext>().Set<UserPlaylist>()));
 builder.Services.AddScoped<IUserPlaylistRepository, UserPlaylistRepository>((provider) => 
     new UserPlaylistRepository(provider.GetService<ChinookContext>().Set<UserPlaylist>()));
 builder.Services.AddScoped<IUserPlaylistService, UserPlaylistService>();
+
+builder.Services.AddScoped<IBaseRepository<Track>, BaseRepository<Track>>((provider) =>
+            new BaseRepository<Track>(provider.GetService<ChinookContext>().Set<Track>()));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>((provider) => new UnitOfWork(provider.GetService<ChinookContext>()));
 

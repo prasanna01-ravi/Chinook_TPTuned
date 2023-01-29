@@ -1,17 +1,49 @@
 ﻿using AutoMapper;
 using Chinook.ClientModels;
+using Chinook.Core;
 using Chinook.Data;
 using Chinook.Data.UnitOfWork;
-using Chinook.Pages;
 using Chinook.Services.Interface;
 
 namespace Chinook.Services.Implementation
 {
     public class PlaylistService : BaseService<Playlist, Models.Playlist>, IPlaylistService
     {
-        public PlaylistService(IPlaylistRepository repository, ILogger<PlaylistService> logger, IMapper mapper, IUnitOfWork uow)
+        private readonly IBaseRepository<Models.Track> _trackRepository;
+        public PlaylistService(IPlaylistRepository repository, ILogger<PlaylistService> logger, IMapper mapper, 
+                IUnitOfWork uow, IBaseRepository<Models.Track> trackRepository)
             : base(repository, logger, mapper, uow)
         {
+            _trackRepository = trackRepository ?? throw new ArgumentNullException(nameof(trackRepository)); 
+        }
+
+        public async Task<bool> AddTrackToPlaylistId(long trackId, long? playlistId, string playListName)
+        {
+            Logger.LogInformation($"Adding track to playlist; trackId: {trackId}, playlistId:{playlistId}, playListName:{playListName}");
+            try
+            {
+                if (!String.IsNullOrEmpty(playListName))
+                {
+                    long lastPlaylistId = await ((IPlaylistRepository)Repository).GetLastPlaylistId();
+                    playlistId = (await Repository.AddAsync(new Models.Playlist()
+                    { Name = playListName, PlaylistId = lastPlaylistId + 1 }))?.PlaylistId;
+
+                    await UOW.Commit();
+                }
+
+                if (playlistId != null && playlistId > 0 && trackId > 0)
+                {
+                    await ((IPlaylistRepository)Repository).AddTrackToPlaylist(playlistId.Value,
+                        ((await _trackRepository.GetAllByCondition(x => x.TrackId == trackId)).FirstOrDefault()));
+                    await UOW.Commit();
+                    return true;
+                }
+            }
+            catch(Exception e)
+            {
+                Logger.LogError($"Failed to add the track with id {trackId} to playlist Id {playlistId}, {e.Message}", e);
+            }
+            return false;
         }
 
         public async Task<List<Playlist>> GetAllAsync(string userId)
@@ -45,8 +77,8 @@ namespace Chinook.Services.Implementation
                         ArtistName = t?.Album?.Artist?.Name ?? "",
                         TrackId = t.TrackId,
                         TrackName = t.Name,
-                        IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == userId &&
-                        up.Playlist.Name == "Favorites")).Any()
+                        IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId.Equals(userId) &&
+                        up.Playlist.Name.Equals(Constant.MyFavTracks))).Any()
                     }).ToList();
 
                     return result;
@@ -77,6 +109,7 @@ namespace Chinook.Services.Implementation
                         await Repository.UpdateAsync(playList);
                         await UOW.Commit();
                         Logger.LogInformation("Successfully renamed the playlist");
+                        return true;
                     }                    
                 }
             }
@@ -100,7 +133,28 @@ namespace Chinook.Services.Implementation
                         await Repository.RemoveAsync(playList);
                         await UOW.Commit();
                         Logger.LogInformation("Successfully removed the playlist");
+                        return true;
                     }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"Failed to rename the play list with id {playlistId}, {e.Message}", e);
+            }
+            return false;
+        }
+
+        public async Task<bool> RemoveTrackFromPlaylist(long trackId, long playlistId)
+        {
+            Logger.LogInformation($"Remove the track {trackId} from playlist {playlistId}");
+            try
+            {
+                if (playlistId > 0 && trackId > 0)
+                {
+                    await ((IPlaylistRepository)Repository).RemoveTrackFromPlayList(playlistId, trackId);
+                    await UOW.Commit();
+                    Logger.LogInformation("Successfully removed the track from playlist");
+                    return true;
                 }
             }
             catch (Exception e)
