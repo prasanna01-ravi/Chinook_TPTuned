@@ -1,0 +1,170 @@
+﻿@page "/playlist/all"
+@attribute [Authorize]
+
+@using Chinook.Core;
+@using Chinook.Services.Interface;
+@using System.Security.Claims;
+<h1>Playlist </h1>
+
+@if (!string.IsNullOrWhiteSpace(InfoMessage))
+{
+    <div class="alert alert-info fade show">
+        <div class="d-flex align-items-start">
+            <div class="flex-grow-1">
+                @InfoMessage
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="CloseInfoMessage"></button>
+        </div>
+    </div>
+}
+
+<table class="table table-striped table-hover table-sm">
+    <thead>
+        <tr>
+            <th>PlayList Name</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var play in Playlist)
+        {
+            <tr>
+                <td><a href="/playlist/@play.PlaylistId">@play.Name</a></td>
+                <td>
+                    <div class="d-flex">
+                        @if (play.Name != Constant.MyFavTracks)
+                        {
+                            @if (play.IsUserPlaylist)
+                            {
+                                <a href="#" class="m-1" title="Add to my playList" @onclick="@(async () => await UnFavoritePlayList(play.PlaylistId, play.Name))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
+                            }
+                            else
+                            {
+                                <a href="#" class="m-1" title="Remove from my playList" @onclick="@(async () => await FavoritePlayList(play.PlaylistId, play.Name))" @onclick:preventDefault><i class="bi bi-star"></i></a>
+                            }
+
+                            <a href="#" class="m-1" title="Rename Playlist" @onclick="@(() => OpenRenamePlaylistDialog(play.PlaylistId))" @onclick:preventDefault><i class="bi bi-pencil-square"></i></a>
+                            <a href="#" class="m-1" title="Remove the playlist" @onclick="@(async () => await RemovePlaylist(play.PlaylistId))" @onclick:preventDefault><i class="bi bi-trash"></i></a>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Inject] IPlaylistService Service { get; set; }
+    [Inject] IUserPlaylistService UserPlayService { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
+    private Modal PlaylistDialog { get; set; }
+    private Chinook.ClientModels.Playlist SelectedPlaylist;
+
+    [Parameter] public string? PlayListName { get; set; }
+
+    private List<Chinook.ClientModels.Playlist> Playlist;
+    private string CurrentUserId;
+    private string InfoMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = await GetUserId();
+
+        await InvokeAsync(StateHasChanged);
+        await LoadPlaylist();
+    }
+
+    private async Task<string> GetUserId()
+    {
+        var user = (await authenticationState).User;
+        var userId = user.FindFirst(u => u.Type.Contains(ClaimTypes.NameIdentifier))?.Value;
+        return userId;
+    }
+
+    private async Task FavoritePlayList(long playlistId, String name)
+    {
+        InfoMessage = "";
+        if (await UserPlayService.AddToUserPlayList(playlistId, CurrentUserId))
+        {
+            await LoadPlaylist();
+            InfoMessage = $"Playlist {name} added to user playlist.";
+        }
+    }
+
+    private async Task UnFavoritePlayList(long playlistId, String name)
+    {
+        InfoMessage = "";
+        if (await UserPlayService.RemoveUserPaylist(playlistId, CurrentUserId))
+        {
+            await LoadPlaylist();
+            InfoMessage = $"Playlist {name}  removed from user playlist.";
+        }
+    }
+
+    private async Task LoadPlaylist()
+    {
+        Playlist = await Service.GetAllAsync(CurrentUserId);
+    }
+
+    private void OpenRenamePlaylistDialog(long playlistId)
+    {
+        CloseInfoMessage();
+        SelectedPlaylist = Playlist.Where(p => p.PlaylistId == playlistId).FirstOrDefault();
+        PlaylistDialog.Open();
+    }
+
+    private async Task RenamePlaylist()
+    {
+        CloseInfoMessage();
+        if (await Service.RenamePlaylist(SelectedPlaylist.PlaylistId, PlayListName))
+        {
+            InfoMessage = $"Playlist '{SelectedPlaylist.Name}' has been renamed to '{PlayListName}'.";
+            PlaylistDialog.Close();
+            await LoadPlaylist();
+        }
+    }
+
+    private async Task RemovePlaylist(long playlistId)
+    {
+        CloseInfoMessage();
+        if (await Service.RemovePlaylist(playlistId))
+        {
+            var playlist = Playlist.Where(p => p.PlaylistId == playlistId).FirstOrDefault();
+            InfoMessage = $"Playlist '{playlist.Name}' has been removed permanently.";
+            await LoadPlaylist();
+        }
+    }
+
+    private void RemoveTrack(long trackId)
+    {
+        CloseInfoMessage();
+    }
+
+    private void CloseInfoMessage()
+    {
+        InfoMessage = "";
+    }
+
+}
+
+<Modal @ref="PlaylistDialog">
+    <Title>
+        Add to playlist
+    </Title>
+    <Body>
+        @if (SelectedPlaylist != null)
+        {
+            <div class="form-group mb-2">
+                <label for="ExistingPlaylist">Old name of the playlist</label>
+                <input type="text" id="OldName" class="form-control" placeholder="Old name of the playlist" value="@SelectedPlaylist.Name">
+            </div>
+            <div class="form-group mb-2">
+                <label for="NewPlaylist">New name of the playlist</label>
+                <input type="text" id="NewNamePlaylist" class="form-control" placeholder="New name of the playlist" @bind="@PlayListName">
+            </div>
+        }
+    </Body>
+    <Footer>
+        <button class="btn btn-success" @onclick="RenamePlaylist">Save</button>
+    </Footer>
+</Modal>
