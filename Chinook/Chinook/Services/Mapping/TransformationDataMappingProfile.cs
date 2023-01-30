@@ -6,6 +6,10 @@ namespace Chinook.Services.Mapping
     {
         public TransformationDataMappingProfile()
         {
+            CreateMap<Models.Artist, ClientModels.Artist>()
+                .ForMember(x => x.AlbumCount, y => y.MapFrom(z => (z.Albums != null ? z.Albums.Count : 0)))
+                .ReverseMap();
+
             CreateMap<Models.Playlist, ClientModels.Playlist>()
                 .ForMember(x => x.Tracks, y => y.Ignore())
                 .ForMember(x => x.IsUserPlaylist, y => y.Ignore())

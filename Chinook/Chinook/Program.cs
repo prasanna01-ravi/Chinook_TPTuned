@@ -33,6 +33,12 @@ builder.Services.AddScoped<IUserPlaylistService, UserPlaylistService>();
 builder.Services.AddScoped<IBaseRepository<Track>, BaseRepository<Track>>((provider) =>
             new BaseRepository<Track>(provider.GetService<ChinookContext>().Set<Track>()));
 
+builder.Services.AddScoped<IArtistRepostory, ArtistRepository>((provider) =>
+    new ArtistRepository(provider.GetService<ChinookContext>().Set<Artist>()));
+
+builder.Services.AddScoped<IArtistService, ArtistService>();
+
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>((provider) => new UnitOfWork(provider.GetService<ChinookContext>()));
 
 builder.Services.AddRazorPages();

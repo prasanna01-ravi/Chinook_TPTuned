@@ -41,9 +41,9 @@ else
                     <td>@track.ArtistName - @track.AlbumTitle - @track.TrackName</td>
                     <td>
                         <div class="d-flex">
-                            @if (Playlist.Name != "Favorite")
+                            @if (Playlist.Name != Constant.MyFavTracks)
                             {
-                                @if (track.IsFavorite || PlaylistId == Constant.PlaylistId)
+                                @if (track.IsFavorite)
                                 {
                                     <a href="#" class="m-1" title="Unark as favorite" @onclick="@(async () => await UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
                                 }

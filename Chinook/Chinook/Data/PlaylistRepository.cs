@@ -19,8 +19,6 @@ namespace Chinook.Data
                     var playList = await Context.Include<Playlist, ICollection<Track>>(p => p.Tracks)
                         .Where(p => p.PlaylistId == playlistId).FirstOrDefaultAsync();
 
-                    //var track = await dbContext.Tracks.Where(p => p.TrackId == trackId).FirstOrDefaultAsync();
-
                     if (playList != null && track != null)
                     {
                         playList.Tracks.Add(track);

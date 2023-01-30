@@ -2,7 +2,6 @@
 @attribute [Authorize]
 
 @using Chinook.Core;
-@using Chinook.Models
 @using Chinook.ClientModels
 @using Chinook.Services.Interface;
 @using Microsoft.EntityFrameworkCore
@@ -68,7 +67,7 @@ else
 
     private List<Chinook.ClientModels.Playlist> Playlist;
 
-    private Artist Artist;
+    private Models.Artist Artist;
     private List<PlaylistTrack> Tracks;
     private DbContext DbContext;
     private PlaylistTrack SelectedTrack;

@@ -1,12 +1,18 @@
 ﻿@page "/"
 @attribute [Authorize]
 
-@using Chinook.Models
-@using Microsoft.EntityFrameworkCore
+@using Chinook.ClientModels;
+@using Chinook.Services.Interface;
+@using Microsoft.EntityFrameworkCore;
 
 <PageTitle>Index</PageTitle>
 
 <h1>Artists</h1>
+
+<input type="text" id="artistName" class="form-control" @oninput="(e) => searchBy(e)"
+       placeholder="Type three characters of artist to beign search with" @bind="@AuthorName">
+
+<br />
 
 @if (Artists == null)
 {
@@ -26,7 +32,7 @@ else
             {
                 <tr>
                     <td><a href="Artist/@artist.ArtistId">@artist.Name</a></td>
-                    <td>@artist.Albums.Count()</td>
+                    <td>@artist.AlbumCount</td>
                 </tr>
             }
         </tbody>
@@ -35,24 +41,26 @@ else
 
 @code {
     private List<Artist> Artists;
+    [Inject] IArtistService Service { get; set; }
     [Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
+    [Parameter] public string? AuthorName { get; set; }
 
-    protected override async Task OnInitializedAsync() {
-        await InvokeAsync(StateHasChanged);
-        Artists = await GetArtists();
-    }
-
-    public async Task<List<Artist>> GetArtists()
-    {   
-        var dbContext = await DbFactory.CreateDbContextAsync();
-        var users = dbContext.Users.Include(a => a.UserPlaylists).ToList();
-        
-        return dbContext.Artists.ToList();
-    }
-
-    public async Task<List<Album>> GetAlbumsForArtist(int artistId)
+    protected override async Task OnInitializedAsync()
     {
-        var dbContext = await DbFactory.CreateDbContextAsync();
-        return dbContext.Albums.Where(a => a.ArtistId == artistId).ToList();
+        await InvokeAsync(StateHasChanged);
+        await GetData(null);
+    }
+
+    public async Task searchBy(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        string name = (string)args?.Value ?? "";
+        if (name?.Trim()?.Length == 0 || name?.Trim()?.Length >= 3)
+            await GetData(name.Trim());
+    }
+
+    public async Task GetData(String searchTerm)
+    {
+        Artists = await Service.GetAdvancedDet(x => String.IsNullOrEmpty(searchTerm) ||
+            x.Name.ToLower().Contains(searchTerm.ToLower()));
     }
 }
