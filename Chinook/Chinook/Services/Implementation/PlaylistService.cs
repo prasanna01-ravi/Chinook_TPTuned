@@ -7,9 +7,23 @@ using Chinook.Services.Interface;
 
 namespace Chinook.Services.Implementation
 {
+    /// <summary>
+    /// The PlaylistService
+    /// </summary>
     public class PlaylistService : BaseService<Playlist, Models.Playlist>, IPlaylistService
     {
+        /// <summary>
+        /// The TrackRepository
+        /// </summary>
         private readonly IBaseRepository<Models.Track> _trackRepository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlaylistService" /> class.
+        /// </summary>
+        /// <param name="repository">The IArtistRepostory</param>
+        /// <param name="logger">The ArtistService Logger</param>
+        /// <param name="mapper">The IMapper</param>
+        /// <param name="uow">The Unit Of Work</param>
         public PlaylistService(IPlaylistRepository repository, ILogger<PlaylistService> logger, IMapper mapper, 
                 IUnitOfWork uow, IBaseRepository<Models.Track> trackRepository)
             : base(repository, logger, mapper, uow)
@@ -17,6 +31,13 @@ namespace Chinook.Services.Implementation
             _trackRepository = trackRepository ?? throw new ArgumentNullException(nameof(trackRepository)); 
         }
 
+        /// <summary>
+        /// Add the track to playlist
+        /// </summary>
+        /// <param name="trackId">The Id of the Track</param>
+        /// <param name="playlistId">The id of the playlist</param>
+        /// <param name="playListName">Name of the playlist</param>
+        /// <returns></returns>
         public async Task<bool> AddTrackToPlaylistId(long trackId, long? playlistId, string playListName)
         {
             Logger.LogInformation($"Adding track to playlist; trackId: {trackId}, playlistId:{playlistId}, playListName:{playListName}");
@@ -46,6 +67,11 @@ namespace Chinook.Services.Implementation
             return false;
         }
 
+        /// <summary>
+        /// Get All Playlist
+        /// </summary>
+        /// <param name="userId">The UserId of the current user</param>
+        /// <returns></returns>
         public async Task<List<Playlist>> GetAllAsync(string userId)
         {
             Logger.LogInformation($"Get all playlist information; user id: {userId}");
@@ -61,6 +87,12 @@ namespace Chinook.Services.Implementation
             return null;
         }
 
+        /// <summary>
+        /// Get the Playlist by Id
+        /// </summary>
+        /// <param name="playListId">The Id of the playlist</param>
+        /// <param name="userId">The UserId of the current user</param>
+        /// <returns></returns>
         public async Task<Playlist> GetById(long playListId, string userId)
         {
             Logger.LogInformation($"Get Detailed information of Playlist by Id; Input received for {playListId} & {userId}");
@@ -95,6 +127,12 @@ namespace Chinook.Services.Implementation
             return null;
         }
 
+        /// <summary>
+        /// Rename the playlist
+        /// </summary>
+        /// <param name="playlistId">The Id of the playlist</param>
+        /// <param name="playlistName">The new name of the playlist</param>
+        /// <returns></returns>
         public async Task<bool> RenamePlaylist(long playlistId, string playlistName)
         {
             Logger.LogInformation($"Rename the playlist {playlistId} to {playlistName}");
@@ -120,6 +158,11 @@ namespace Chinook.Services.Implementation
             return false;
         }
 
+        /// <summary>
+        /// Remove the playlist
+        /// </summary>
+        /// <param name="playlistId">The Id of the playlist</param>
+        /// <returns></returns>
         public async Task<bool> RemovePlaylist(long playlistId)
         {
             Logger.LogInformation($"Removing the playlist {playlistId}");
@@ -144,6 +187,12 @@ namespace Chinook.Services.Implementation
             return false;
         }
 
+        /// <summary>
+        /// Remove the track to playlist
+        /// </summary>
+        /// <param name="trackId">The Id of the Track</param>
+        /// <param name="playlistId">The id of the playlist</param>
+        /// <returns></returns>
         public async Task<bool> RemoveTrackFromPlaylist(long trackId, long playlistId)
         {
             Logger.LogInformation($"Remove the track {trackId} from playlist {playlistId}");

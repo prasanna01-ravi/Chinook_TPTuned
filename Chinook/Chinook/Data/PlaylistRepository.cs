@@ -4,12 +4,25 @@ using System.Linq.Expressions;
 
 namespace Chinook.Data
 {
+    /// <summary>
+    /// The PlaylistRepository
+    /// </summary>
     public class PlaylistRepository : BaseRepository<Playlist>, IPlaylistRepository
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlaylistRepository" /> class.
+        /// </summary>
+        /// <param name="context">The Playlist Context</param>
         public PlaylistRepository(DbSet<Playlist> context) : base(context)
         {
         }
 
+        /// <summary>
+        /// Add the track to playlist
+        /// </summary>
+        /// <param name="playlistId">The Id of the playlist</param>
+        /// <param name="track">The instance of Track</param>
+        /// <returns></returns>
         public async Task<bool> AddTrackToPlaylist(long playlistId, Track track)
         {
             try
@@ -32,11 +45,20 @@ namespace Chinook.Data
             }
         }
 
+        /// <summary>
+        /// Get All the Playlist
+        /// </summary>
+        /// <returns></returns>
         public async override Task<List<Playlist>> GetAll()
         {
             return await Context.Include(a => a.UserPlaylists).ToListAsync();
         }
 
+        /// <summary>
+        /// Get Advanced Details of Playlist By Id
+        /// </summary>
+        /// <param name="playlistId">The Id of the playlist</param>
+        /// <returns></returns>
         public async Task<Playlist> GetAdvancedDetById(long playlistId)
         {
             return await Context.Include(a => a.Tracks).ThenInclude(a => a.Album).ThenInclude(a => a.Artist)
@@ -45,12 +67,21 @@ namespace Chinook.Data
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// Get the Playlist By Id
+        /// </summary>
+        /// <param name="playlistId">The Id of the playlist</param>
+        /// <returns></returns>
         public async Task<Playlist> GetById(long playlistId)
         {
             return await Context.Where(p => p.PlaylistId == playlistId)
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// Get the Id of last playlist
+        /// </summary>
+        /// <returns></returns>
         public async Task<long> GetLastPlaylistId()
         {
             try
@@ -64,6 +95,12 @@ namespace Chinook.Data
             }
         }
 
+        /// <summary>
+        /// Remove the track from playlist
+        /// </summary>
+        /// <param name="playlistId">The Id of the playlist</param>
+        /// <param name="trackId">Id of the track</param>
+        /// <returns></returns>
         public async Task<bool> RemoveTrackFromPlayList(long playlistId, long trackId)
         {
             try

@@ -2,8 +2,16 @@
 
 namespace Chinook.Data
 {
+    /// <summary>
+    /// The DbInitializer
+    /// </summary>
     public static class DbInitializer
     {
+        /// <summary>
+        /// Initialize the data
+        /// </summary>
+        /// <param name="context">The database context</param>
+        /// <returns></returns>
         public static void Initialize(ChinookContext context)
         {
             long favouritePlaylistId = Constant.PlaylistId;
